@@ -1,0 +1,44 @@
+[project]
+name = "litellm-toolbelt"
+version = "0.1.0"
+description = "Reusable LiteLLM proxy hooks: server-side tool packs, structured-output repair, and upstream cost passthrough."
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "max-scopp" }]
+dependencies = [
+    "litellm>=1.80",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.7",
+    "mypy>=1.13",
+]
+
+[project.urls]
+Homepage = "https://github.com/max-scopp/litellm-toolbelt"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/litellm_toolbelt"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "ASYNC"]
+ignore = ["B008"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
