@@ -28,7 +28,7 @@ Register it in `config.yaml` as a module-level instance:
 
     litellm_settings:
       callbacks:
-        - my_pack.hook:proxy_handler_instance
+        - my_pack.hook.proxy_handler_instance
 
 A pack that needs no loop at all (a logger, a rewriter) does not belong here —
 subclass `litellm.integrations.custom_logger.CustomLogger` directly.

@@ -20,15 +20,21 @@ on, so one callback covers both response modes:
 
     litellm_settings:
       callbacks:
-        - litellm_toolbelt.cost:proxy_handler_instance
+        - litellm_toolbelt.cost.proxy_handler_instance
 
-Which number: a nonzero cost from LiteLLM wins, because that is what the key is
-actually charged. Failing that, the cost the upstream provider reported for the
-call is used — this is what rescues models missing from LiteLLM's price map,
-where its own figure is a 0.0 that means "unpriced", not "free". Only if
-neither exists does the field stay absent, leaving the client free to fall back
-to its own estimate. A cost the provider itself put in `usage.cost` is left
-exactly as it is.
+Which number: a *positive* cost from LiteLLM wins, because that is what the key
+is actually charged. Failing that, the cost the upstream provider reported for
+the call — including an explicit zero — which is what rescues a model missing
+from LiteLLM's price map. Otherwise the field stays absent, and the client is
+free to fall back to its own estimate.
+
+A zero that only LiteLLM produced is deliberately NOT reported. Its calculator
+returns 0.0 both for a model priced at zero and for one it cannot price at all,
+and those are not the same claim: writing 0.0 would tell the client "this call
+was free" about a call that may have cost real money, which is the exact failure
+this hook exists to fix. Absent means "nobody knows", which is true.
+
+A cost the provider itself put in `usage.cost` is left exactly as it is.
 """
 
 from __future__ import annotations
@@ -101,18 +107,17 @@ def _litellm_cost(response: Any, data: dict[str, Any]) -> float | None:
 def resolve_cost(response: Any, data: dict[str, Any]) -> float | None:
     """The cost to report for `response`, or None when nobody knows one.
 
-    See the module docstring for why a nonzero LiteLLM cost beats the
-    provider's figure and why a zero one does not.
+    See the module docstring for why a positive LiteLLM cost beats the provider's
+    figure, and why a zero one is dropped rather than reported as free.
     """
     ours = _litellm_cost(response, data)
     if ours:
         return ours
 
-    theirs = _provider_reported(response)
-    if theirs is not None:
-        return theirs
-
-    return ours  # 0.0 when LiteLLM priced it as free, else None
+    # An explicit zero from the provider is a claim ("this call was free"); a
+    # zero from LiteLLM's calculator is just as likely to be its price map
+    # coming up empty, so it is not passed on.
+    return _provider_reported(response)
 
 
 class CostPassthrough(CustomLogger):

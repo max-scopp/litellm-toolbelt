@@ -83,8 +83,17 @@ async def test_litellms_own_cost_wins_when_it_has_one(hook: CostPassthrough) -> 
     assert out.usage.cost == 0.002
 
 
-async def test_a_genuinely_free_call_reports_zero(hook: CostPassthrough) -> None:
+async def test_a_zero_only_litellm_produced_is_not_reported_as_free(
+    hook: CostPassthrough,
+) -> None:
+    """Its calculator returns 0.0 for an unpriceable model too, so 0.0 is not a claim."""
     out = await hook.async_post_call_success_hook({}, None, response(response_cost=0.0))
+    assert getattr(out.usage, "cost", None) is None
+
+
+async def test_a_zero_the_provider_reported_is_reported(hook: CostPassthrough) -> None:
+    resp = response(response_cost=0.0, additional_headers={PROVIDER_HEADER: 0.0})
+    out = await hook.async_post_call_success_hook({}, None, resp)
     assert out.usage.cost == 0.0
 
 
@@ -116,6 +125,7 @@ async def test_junk_is_not_a_cost(hook: CostPassthrough, junk: Any) -> None:
 def test_resolve_cost_is_usable_on_its_own() -> None:
     assert resolve_cost(response(response_cost=0.75), {}) == 0.75
     assert resolve_cost(response(), {}) is None
+    assert resolve_cost(response(response_cost=0.0), {}) is None
 
 
 def test_constructing_the_hook_turns_on_streaming_cost(

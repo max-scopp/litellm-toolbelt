@@ -84,7 +84,7 @@ proxy_handler_instance = ToolPackHook(WeatherPack())
 # config.yaml
 litellm_settings:
   callbacks:
-    - my_pack.hook:proxy_handler_instance
+    - my_pack.hook.proxy_handler_instance
 ```
 
 The contract is `ToolPack` (a runtime-checkable `Protocol`):
@@ -139,7 +139,7 @@ alias) they have no entry, so the call shows up as free.
 ```yaml
 litellm_settings:
   callbacks:
-    - litellm_toolbelt.cost:proxy_handler_instance
+    - litellm_toolbelt.cost.proxy_handler_instance
 ```
 
 ```jsonc
@@ -156,16 +156,21 @@ to the config file).
 
 Which number, in order:
 
-1. **A nonzero cost from LiteLLM** — what the key is actually charged, read from
+1. **A positive cost from LiteLLM** — what the key is actually charged, read from
    the response's `_hidden_params`, else its logging object.
-2. **The cost the upstream provider reported** for the call. This is what rescues
-   models missing from LiteLLM's price map, where its own figure is a `0.0` that
-   means "unpriced", not "free".
-3. **`0.0`** when LiteLLM priced the call as genuinely free.
+2. **The cost the upstream provider reported** for the call, including an explicit
+   zero. This is what rescues a model missing from LiteLLM's price map.
+3. **Nothing.** The field stays absent and the client falls back to its own
+   estimate.
 
-If none of those exist the field stays absent, leaving the client free to fall
-back to its own estimate. A cost the provider itself put in `usage.cost` is left
-exactly as it is.
+A zero that only LiteLLM produced is deliberately not reported. Its calculator
+returns `0.0` both for a model priced at zero and for one it cannot price at all,
+and those are different claims: writing `0.0` would tell the client a call that
+may have cost real money was free — the exact failure this hook exists to fix.
+Absent means "nobody knows", which is true.
+
+A cost the provider itself put in `usage.cost` is left exactly as it is; with
+OpenRouter behind the proxy, that is already the case and this hook is a no-op.
 
 ## Structured-output repair
 
@@ -177,7 +182,7 @@ while `content` comes back empty, and the caller parses an empty string.
 ```yaml
 litellm_settings:
   callbacks:
-    - litellm_toolbelt.structured_output:proxy_handler_instance
+    - litellm_toolbelt.structured_output.proxy_handler_instance
 ```
 
 When a request carries a JSON `response_format` and the answer has no content but

@@ -13,7 +13,7 @@ reasoning, the reasoning is the answer. Everything else passes through.
 
     litellm_settings:
       callbacks:
-        - litellm_toolbelt.structured_output:proxy_handler_instance
+        - litellm_toolbelt.structured_output.proxy_handler_instance
 """
 
 from __future__ import annotations
