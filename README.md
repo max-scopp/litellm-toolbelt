@@ -122,7 +122,10 @@ loop stops after `max_iterations` rounds, and `marker` is the HTML comment that
 keeps the prompt from being re-appended on each round.
 
 A real pack: [obsidian-litellm-tools](https://github.com/max-scopp/obsidian-litellm-tools),
-which gives every client of the proxy read/write access to an Obsidian vault.
+which gives every client of the proxy read/write access to an Obsidian vault
+(with [obsidian-writer](https://github.com/max-scopp/obsidian-writer) behind it
+and [obsidian-recall](https://github.com/max-scopp/obsidian-recall) for search
+by meaning).
 
 ## Cost passthrough
 
